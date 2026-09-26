@@ -49,11 +49,22 @@ function M.setup(user_opts)
 	vim.api.nvim_create_user_command("FastFontSetupTerm", function()
 		local term = os.getenv("TERM_PROGRAM")
 
-		if term == "WezTerm" then
+		if term and term:lower() == "wezterm" then
 			local wez_path = vim.fn.expand("~/.wezterm.lua")
-			local f = io.open(wez_path, "a") -- "a" opens the file in append mode
-			if f then
-				local snippet = [[
+			-- 1. Check if it's already installed
+			local f_read = io.open(wez_path, "r")
+			local content = f_read and f_read:read("*a") or ""
+			if f_read then f_read:close() end
+
+			if content:find("FastFontMode") then
+				vim.notify("FastFont: Hook is already installed in wezterm.lua", vim.log.levels.INFO)
+				return
+			end
+
+			-- 2. Append the hook if not found
+			local f_write = io.open(wez_path, "a")
+			if f_write then
+				local hook = [[	
 
 				-- [FastFont.nvim Auto-Generated Hook]
 				wezterm.on('user-var-changed', function(window, pane, name, value)
@@ -68,26 +79,30 @@ function M.setup(user_opts)
 					end
 				end)
 				]]
-				f:write(snippet)
-				f:close()
-				vim.notify("FastFont: WezTerm hook appended to ~/.wezterm.lua. Please restart WezTerm.", vim.log.levels.INFO)
+				f_write:write(hook)
+				f_write:close()
+				vim.notify("FastFont: Hook successfully added! Please restart WezTerm.", vim.log.levels.INFO)
 			else
-				vim.notify("FastFont: Could not open ~/.wezterm.lua", vim.log.levels.ERROR)
-			end
-
-		elseif term == "kitty" then
-			local kitty_path = vim.fn.expand("~/.config/kitty/kitty.conf")
-			local f = io.open(kitty_path, "a")
-			if f then
-				f:write("\n# [FastFont.nvim] Allow font switching\nallow_remote_control yes\n")
-				f:close()
-				vim.notify("FastFont: Remote control enabled in kitty.conf. Please restart Kitty.", vim.log.levels.INFO)
-			else
-				vim.notify("FastFont: Could not open kitty.conf", vim.log.levels.ERROR)
+				vim.notify("FastFont: Could not open ~/.wezterm.lua for writing", vim.log.levels.ERROR)
 			end
 		else
-			vim.notify("FastFont: Your terminal (" .. tostring(term) .. ") requires manual font setup.", vim.log.levels.WARN)
+			vim.notify("FastFontSetup is currently only automated for WezTerm.", vim.log.levels.WARN)
 		end
+	end, { desc = "Inject WezTerm configuration for FastFont" })
+
+elseif term == "kitty" then
+	local kitty_path = vim.fn.expand("~/.config/kitty/kitty.conf")
+	local f = io.open(kitty_path, "a")
+	if f then
+		f:write("\n# [FastFont.nvim] Allow font switching\nallow_remote_control yes\n")
+		f:close()
+		vim.notify("FastFont: Remote control enabled in kitty.conf. Please restart Kitty.", vim.log.levels.INFO)
+	else
+		vim.notify("FastFont: Could not open kitty.conf", vim.log.levels.ERROR)
+	end
+else
+	vim.notify("FastFont: Your terminal (" .. tostring(term) .. ") requires manual font setup.", vim.log.levels.WARN)
+end
 	end, { desc = "Injects required terminal hooks for FastFont" })
 	-- Merge user options with defaults
 	local config = vim.tbl_deep_extend("force", defaults, user_opts or {})
