@@ -69,6 +69,7 @@ function M.setup(user_opts)
 
 -- [FastFont.nvim Auto-Generated Hook]
 wezterm.on('user-var-changed', function(window, pane, name, value)
+	wezterm.log_info("SIGNAL RECEIVED: " .. name .. " -> " .. value)
 	if name == 'FastFontMode' then
 		local overrides = window:get_config_overrides() or {}
 		if value ~= 'coding' and value ~= '' then
@@ -77,6 +78,7 @@ wezterm.on('user-var-changed', function(window, pane, name, value)
 			overrides.font = nil 
 		end
 		window:set_config_overrides(overrides)
+		wezterm.log_info("Font override applied!")
 	end
 end)
 ]]
