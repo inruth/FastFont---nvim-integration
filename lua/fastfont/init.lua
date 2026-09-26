@@ -32,7 +32,7 @@ local function set_font_mode(is_reading, config)
 		vim.opt.guifont = is_reading and config.gui_reading_font or config.gui_coding_font
 
 		-- WezTerm
-	elseif term == "WezTerm" then
+	elseif term and term:lower() == "wezterm" then
 		local val = is_reading and config.reading_font or config.coding_font
 		io.stdout:write("\x1b]1337;SetUserVar=FastFontMode=" .. b64_encode(val) .. "\x07")
 
